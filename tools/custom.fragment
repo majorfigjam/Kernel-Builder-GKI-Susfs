@@ -35,3 +35,70 @@
 # For integration instructions, refer to: https://github.com/maxsteeel/nomount/tree/master/kernel
 #CONFIG_NOMOUNT=y
 
+# ==========================================
+# KALI NETHUNTER GKI KCONFIG FRAGMENT
+# Target: Android 15 (Kernel 6.6)
+# ==========================================
+
+# --- 1. CHROOT ENVIRONMENT (System V IPC) ---
+# Absolutely required for the Kali Linux chroot to run properly and manage memory.
+CONFIG_SYSVIPC=y
+CONFIG_SYSVIPC_SYSCTL=y
+CONFIG_POSIX_MQUEUE=y
+CONFIG_IPC_NS=y
+
+# --- 2. BADUSB & HID GADGET ---
+# Required for DuckHunter / keystroke injection attacks.
+CONFIG_USB_CONFIGFS_F_HID=y
+CONFIG_USB_CONFIGFS_F_UVC=y
+
+# --- 3. CORE NETWORKING & MAC80211 ---
+# Enables the base frameworks required for monitor mode and packet injection.
+CONFIG_MAC80211=y
+CONFIG_MAC80211_MESH=y
+CONFIG_CFG80211_WEXT=y
+CONFIG_WEXT_CORE=y
+CONFIG_WEXT_PROC=y
+CONFIG_WEXT_SPY=y
+CONFIG_WEXT_PRIV=y
+
+# --- 4. USB WI-FI ADAPTERS (Monitor Mode Capable) ---
+# Atheros (Common in TP-Link dongles)
+CONFIG_ATH9K_HTC=y
+CONFIG_CARL9170=y
+CONFIG_ATH10K_USB=y
+
+# Realtek (Older but reliable chipsets)
+CONFIG_RTL8187=y
+CONFIG_RTL8XXXU=y
+
+# Ralink / MediaTek (Alfa networks, etc.)
+CONFIG_RT2800USB=y
+CONFIG_RT2800USB_RT3573=y
+CONFIG_RT2800USB_RT53XX=y
+CONFIG_RT2800USB_RT55XX=y
+CONFIG_RT2800USB_UNKNOWN=y
+CONFIG_MT7601U=y
+
+# --- 5. USB ETHERNET & TETHERING ---
+# Allows connection of standard USB to RJ45 adapters for wired attacks.
+CONFIG_USB_USBNET=y
+CONFIG_USB_NET_CDC_EEM=y
+CONFIG_USB_NET_RNDIS_WLAN=y
+CONFIG_USB_NET_CDC_MBIM=y
+
+# --- 6. BLUETOOTH PENTESTING ---
+# Exposes Bluetooth hardware for sniffing/spoofing tools.
+CONFIG_BT_HCIBTUSB=y
+CONFIG_BT_HCIUART=y
+CONFIG_BT_HCIUART_H4=y
+
+# --- 7. SOFTWARE DEFINED RADIO (SDR) ---
+# Required for RTL-SDR dongles to intercept radio frequencies.
+CONFIG_MEDIA_SDR_SUPPORT=y
+CONFIG_MEDIA_USB_SUPPORT=y
+
+# --- 8. OUT-OF-TREE DRIVERS ---
+# Custom RTL8812AU Injection
+CONFIG_RTL8812AU=y
+
