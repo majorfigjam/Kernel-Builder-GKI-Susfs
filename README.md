@@ -22,6 +22,7 @@ The result? You get one single, tailor-made kernel artifact and its exact matchi
 
 ## ⚙️ Features
 * **Multiple Root Managers:** Native integration support for `KernelSU`, `KernelSU-Next`, `SukiSU-Ultra`, and `ReSukiSU`.
+* **Smart Stock Isolation:** Select `Stock` to guarantee a pristine Google source tree. Combine `Stock` with custom Kconfigs to build an "Enhanced Stock" kernel—perfect for APatch or Magisk users who need specific kernel features (like OverlayFS or Wireguard) baked into the core without conflicting root source code pollution.
 * **SuSFS Integration:** Automated patching and macro injection for SuSFS to enable advanced path hiding, kstat spoofing, and mount masking.
 * **Customization Engine:** Master switch to inject custom Kconfig fragments, `.patch` files, and raw kernel source modifications on demand.
 * **Flexible Packaging:** Outputs a standard `AnyKernel3` (AK3) flashable zip by default. If you provide a full OTA URL, it will extract, patch, and repack a raw `boot.img` for direct fastboot flashing.
@@ -38,8 +39,8 @@ Click the **Fork** button at the top right of this page to create your own copy 
 ### 2. Add Your Custom Files (Optional)
 If you plan to use the Customization Engine, place your files in the respective directories before running the workflow:
 * **Custom Kconfigs:** Place or un-hash preconfigured flags in `tools/custom.fragment` (e.g., `CONFIG_WIREGUARD=y`).
-* **User Patches:** Drop any `.patch` files into `tools/user_patches/`.
-* **User Source:** Drop raw driver files or source overrides into `tools/user_source/`.
+* **User Patches:** Drop any `.patch` files into `tools/user_patches/`. *(Note: Blocked when `Stock` is selected)*
+* **User Source:** Drop raw driver files or source overrides into `tools/user_source/`. *(Note: Blocked when `Stock` is selected)*
 
 ### 3. Enable GitHub Actions
 In your forked repository, navigate to the **Actions** tab. Click **"I understand my workflows, go ahead and enable them"**.
@@ -54,10 +55,10 @@ In your forked repository, navigate to the **Actions** tab. Click **"I understan
 | **Build Channel** | Choose `dynamic` (latest upstream commits) or `stable` (fallback to verified forks if dynamic fails). |
 | **Build Name** | A custom name for your output artifact (e.g., `Pixel_10_Pro_Testing`). |
 | **Kernel Version** | The exact GKI target version you wish to build (e.g., `6.6.118`). |
-| **Root Environment** | Select your preferred root manager from the dropdown list. |
-| **Integrate Root Manager and SUSFS?** | Check to inject Kernel root and SUSFS. |
-| **Integrate Root Manager only?** | Check to inject the selected root manager without adding SuSFS. |
-| **Inject Custom Kconfigs, patches, and source files?** | Check to apply `tools/custom.fragment`, `tools/user_patches/*.patch`, and `tools/user_source/*`. If unchecked, builds a clean stock tree. |
+| **Root Environment** | Select your preferred root manager from the dropdown list (`KernelSU`, `KernelSU-Next`, `SukiSU-Ultra`, `ReSukiSU`, or `Stock`). |
+| **Integrate Root Manager and SUSFS?** | Check to inject Kernel root and SUSFS. *(Ignored if `Stock` is selected)* |
+| **Integrate Root Manager only?** | Check to inject the selected root manager without adding SuSFS. *(Ignored if `Stock` is selected)* |
+| **Inject Custom Kconfigs, patches, and source files?** | Check to apply `tools/custom.fragment`, `tools/user_patches/*.patch`, and `tools/user_source/*`. **If `Stock` is selected, only `custom.fragment` Kconfigs will be applied to prevent source pollution.** |
 | **OTA URL (Optional)** | Leave blank to output an `AnyKernel3` zip. Provide a direct link to a full OTA zip to output a pre-patched `boot.img`. |
 
 4. Click **Run workflow**.

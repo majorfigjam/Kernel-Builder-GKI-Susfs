@@ -44,14 +44,19 @@ on:
         required: false
         type: boolean
         default: false
-
+        
       custom_kconfigs:
-        description: >
-          Inject custom Kconfigs, patches and source files?
+        description: "Inject custom Kconfigs (tools/custom.fragment)?"
         required: false
         type: boolean
         default: false
 
+      custom_patches:
+        description: "Apply User Patches and Inject Source Files?"
+        required: false
+        type: boolean
+        default: false
+        
       ota_url:
         description: "Full OTA ZIP URL (blank produces AK3 zip)"
         required: false
@@ -269,7 +274,7 @@ jobs:
           bash ./scripts/integrate_susfs.sh
 
       - name: Fix SUSFS Patch Rejections
-        if: inputs.enable_ksu_susfs == true
+        if: inputs.root_manager != 'Stock' && inputs.enable_ksu_susfs == true
         run: |
           bash ./scripts/fix_susfs_rejections.sh
 
@@ -281,7 +286,7 @@ jobs:
           ./scripts/configure_kconfigs.sh
 
       - name: Inject User Source Files
-        if: ${{ inputs.custom_kconfigs }}
+        if: ${{ inputs.custom_patches }}
         run: |
           SRC_DIR="$(pwd)/tools/user_source"
 
@@ -297,7 +302,7 @@ jobs:
         shell: bash
 
       - name: Apply User Patches
-        if: ${{ inputs.custom_kconfigs }}
+        if: ${{ inputs.custom_patches }}
         run: |
           PATCH_DIR="$(pwd)/tools/user_patches"
 
@@ -328,7 +333,7 @@ jobs:
           OFFICIAL_HASH=${{ env.OFFICIAL_HASH }} \
           OFFICIAL_DATE=${{ env.OFFICIAL_DATE }} \
           bash ./scripts/build_kernel.sh
-
+          
       - name: Pull stock boot.img from OTA
         if: env.REPACK_ENABLED == 'true'
         run: |
@@ -464,7 +469,7 @@ jobs:
       # MODIFIED: Fetch upstream APK on 'dynamic' or 'stable', bypass on 'test'
       # ---------------------------------------------------------
       - name: Fetch Matching Manager APK
-        if: (inputs.enable_ksu_susfs == true || inputs.enable_ksu == true) && (inputs.build_channel != 'test' || inputs.root_manager != 'KernelSU-Next')
+        if: inputs.root_manager != 'Stock' && (inputs.enable_ksu_susfs == true || inputs.enable_ksu == true) && (inputs.build_channel != 'test' || inputs.root_manager != 'KernelSU-Next')
         id: fetch_manager
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -482,7 +487,7 @@ jobs:
           if-no-files-found: error
 
       - name: Upload Manager APK
-        if: inputs.enable_ksu_susfs == true || inputs.enable_ksu == true
+        if: inputs.root_manager != 'Stock' && (inputs.enable_ksu_susfs == true || inputs.enable_ksu == true)
         uses: actions/upload-artifact@v4
         with:
           name: ${{ inputs.root_manager }}-Manager
