@@ -367,7 +367,7 @@ jobs:
             --outdir "out/final" \
             --outname "${STOCK_NAME}-repacked.img" \
             --workdir "work/repack-tmp"
-
+            
       - name: Prepare Final Artifacts
         run: |
           mkdir -p out/final
@@ -387,7 +387,32 @@ jobs:
 
             git clone --depth=1 -b "$AK3_BRANCH" "$AK3_REPO" AnyKernel3-Builder
             rm -rf AnyKernel3-Builder/.git AnyKernel3-Builder/README.md AnyKernel3-Builder/*placeholder
-            cp -f out/Image AnyKernel3-Builder/
+            
+            # ---------------------------------------------------------
+            # DYNAMIC HARVEST: Locate and copy the core Image
+            # ---------------------------------------------------------
+            echo ">>> Locating kernel Image..."
+            IMAGE_PATH=$(find . -name "Image" -type f | grep -v "AnyKernel3" | head -n 1)
+            if [ -n "$IMAGE_PATH" ]; then
+              cp -f "$IMAGE_PATH" AnyKernel3-Builder/
+              echo ">>> Successfully copied Image from: $IMAGE_PATH"
+            else
+              echo ">>> ERROR: Kernel Image not found in workspace!"
+              exit 1
+            fi
+          
+            # ---------------------------------------------------------
+            # DYNAMIC HARVEST: Locate and package .ko modules for AK3
+            # ---------------------------------------------------------
+            echo ">>> Harvesting compiled .ko modules..."
+            mkdir -p AnyKernel3-Builder/modules/vendor/lib/modules/
+            
+            # Sweep the entire workspace for any compiled kernel objects
+            find . -name "*.ko" -type f -exec cp {} AnyKernel3-Builder/modules/vendor/lib/modules/ \;
+            
+            # Verify if modules were actually found and copied
+            ls -lah AnyKernel3-Builder/modules/vendor/lib/modules/ || echo "No modules found."
+
             cp -r AnyKernel3-Builder/* out/final/
 
           else
@@ -398,7 +423,28 @@ jobs:
             # Generate the specific AK3 zip for inclusion in the artifact
             git clone --depth=1 -b "$AK3_BRANCH" "$AK3_REPO" AnyKernel3-Builder
             rm -rf AnyKernel3-Builder/.git AnyKernel3-Builder/README.md AnyKernel3-Builder/*placeholder
-            cp -f out/Image AnyKernel3-Builder/
+            
+            # ---------------------------------------------------------
+            # DYNAMIC HARVEST: Locate and copy the core Image
+            # ---------------------------------------------------------
+            echo ">>> Locating kernel Image..."
+            IMAGE_PATH=$(find . -name "Image" -type f | grep -v "AnyKernel3" | head -n 1)
+            if [ -n "$IMAGE_PATH" ]; then
+              cp -f "$IMAGE_PATH" AnyKernel3-Builder/
+              echo ">>> Successfully copied Image from: $IMAGE_PATH"
+            else
+              echo ">>> ERROR: Kernel Image not found in workspace!"
+              exit 1
+            fi
+          
+            # ---------------------------------------------------------
+            # DYNAMIC HARVEST: Locate and package .ko modules for AK3
+            # ---------------------------------------------------------
+            echo ">>> Harvesting compiled .ko modules..."
+            mkdir -p AnyKernel3-Builder/modules/vendor/lib/modules/
+            
+            # Sweep the entire workspace for any compiled kernel objects
+            find . -name "*.ko" -type f -exec cp {} AnyKernel3-Builder/modules/vendor/lib/modules/ \;
 
             # Zip the AK3 payload explicitly into out/final/ with root manager prepended
             cd AnyKernel3-Builder
