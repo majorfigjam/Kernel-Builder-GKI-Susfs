@@ -11,11 +11,10 @@
  source "drivers/net/wireless/realtek/rtl8xxxu/Kconfig"
 --- a/drivers/net/wireless/realtek/Makefile
 +++ b/drivers/net/wireless/realtek/Makefile
-@@ -6,6 +6,7 @@
- 
- obj-$(CONFIG_RTL8180)		+= rtl818x/
- obj-$(CONFIG_RTL8187)		+= rtl818x/
-+obj-$(CONFIG_RTL8812AU)		+= rtl8812au/
- obj-$(CONFIG_RTLWIFI)		+= rtlwifi/
- obj-$(CONFIG_RTL8XXXU)		+= rtl8xxxu/
- obj-$(CONFIG_RTW88)		+= rtw88/
+@@ -1,2 +1,6 @@
+ # SPDX-License-Identifier: GPL-2.0
++
++# --- NETHUNTER REALTEK HOOK ---
++obj-y += rtl8812au/
++ccflags-y += -DCONFIG_RTL8812AU=1
+ #

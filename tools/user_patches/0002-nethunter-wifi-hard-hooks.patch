@@ -1,0 +1,42 @@
+From: Universal GKI Builder
+Date: Sat, 15 Aug 2026
+Subject: [PATCH] Nethunter WiFi Makefile Hard-Hooks
+
+--- a/net/Makefile
++++ b/net/Makefile
+@@ -1,2 +1,5 @@
+ # SPDX-License-Identifier: GPL-2.0
++
++# --- NETHUNTER DIRECTORY HOOK ---
++obj-y += wireless/ mac80211/
+ #
+--- a/net/wireless/Makefile
++++ b/net/wireless/Makefile
+@@ -1,2 +1,9 @@
+ # SPDX-License-Identifier: GPL-2.0
++
++# --- NETHUNTER HARD HOOK ---
++obj-y += wext-core.o wext-proc.o wext-spy.o wext-priv.o
++cfg80211-y += wext-compat.o wext-sme.o
++obj-y += cfg80211.o
++ccflags-y += -DCONFIG_CFG80211=1 -DCONFIG_CFG80211_WEXT=1
++ccflags-y += -DCONFIG_WIRELESS_EXT=1 -DCONFIG_WEXT_CORE=1 -DCONFIG_WEXT_PROC=1 -DCONFIG_WEXT_SPY=1 -DCONFIG_WEXT_PRIV=1
+ obj-$(CONFIG_CFG80211) += cfg80211.o
+--- a/net/mac80211/Makefile
++++ b/net/mac80211/Makefile
+@@ -1,2 +1,7 @@
+ # SPDX-License-Identifier: GPL-2.0
++
++# --- NETHUNTER HARD HOOK ---
++mac80211-y += mesh.o mesh_pathtbl.o mesh_plink.o mesh_hwmp.o mesh_sync.o mesh_ps.o rc80211_minstrel_ht.o
++obj-y += mac80211.o
++ccflags-y += -DCONFIG_MAC80211=1 -DCONFIG_MAC80211_MESH=1 -DCONFIG_MAC80211_RC_MINSTREL=1
+ obj-$(CONFIG_MAC80211) += mac80211.o
+--- a/drivers/net/wireless/Makefile
++++ b/drivers/net/wireless/Makefile
+@@ -1,2 +1,5 @@
+ # SPDX-License-Identifier: GPL-2.0
++
++# --- NETHUNTER DIRECTORY HOOK ---
++obj-y += realtek/
+ #
