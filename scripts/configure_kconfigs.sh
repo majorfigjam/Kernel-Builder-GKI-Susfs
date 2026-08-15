@@ -35,7 +35,8 @@ if [ "$WITH_CUSTOM" = "true" ]; then
         # Inject fragment targeting into the Bazel build rules
         echo 'exports_files(["custom_fragment"])' >> BUILD.bazel
         sed -i 's/"trim_nonlisted_kmi": True,/"trim_nonlisted_kmi": False,/g' BUILD.bazel
-        sed -i '/"kernel_aarch64": {/a \        "defconfig_fragments": ["custom_fragment"],' BUILD.bazel
+        #sed -i '/"kernel_aarch64": {/a \        "defconfig_fragments": ["custom_fragment"],' BUILD.bazel
+        sed -i '/name = "kernel_aarch64",/a \    post_defconfig_fragments = ["custom_fragment"],' BUILD.bazel
         
         # Exclude the untracked fragment from standard git tracking status
         echo "custom_fragment" >> .git/info/exclude
