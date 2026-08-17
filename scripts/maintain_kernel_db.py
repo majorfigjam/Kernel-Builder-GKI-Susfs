@@ -49,7 +49,7 @@ def main():
     
     database = {}
     is_incremental = False
-    commit_depth = 40000
+    commit_depth = 25000
 
     # 1. State check: Full build vs Incremental update
     if os.path.exists(DB_FILE):
@@ -62,10 +62,10 @@ def main():
         except Exception as e:
             print(f"[-] Failed to load existing DB: {e}. Defaulting to Full Build.")
             is_incremental = False
-            commit_depth = 40000
+            commit_depth = 25000
             database = {}
     else:
-        print(f"[!] Database not found at '{DB_FILE}'. Triggering Full Historical Build (Depth: 40000).")
+        print(f"[!] Database not found at '{DB_FILE}'. Triggering Full Historical Build (Depth: 25000).")
 
     # 2. Fetch all remote branches
     print("[*] Fetching active KMI and LTS branches from kernel/common...")
@@ -116,9 +116,9 @@ def main():
         if not is_incremental:
             # Full build: Deep scan only the foundational branches
             if b["date"] in ["2025-06", "2025-07"]:
-                branch_depth = 40000
+                branch_depth = 25000
             else:
-                branch_depth = 5000  # Shallow scan for newer branches and LTS
+                branch_depth = 2500  # Shallow scan for newer branches and LTS
         else:
             # Incremental build: Always use the fast 300 commit limit
             branch_depth = commit_depth
