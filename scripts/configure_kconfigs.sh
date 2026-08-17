@@ -25,40 +25,70 @@ if [ "$WITH_CUSTOM" = "true" ]; then
     echo ">>> Integrating Kconfig Configurations from $FRAGMENT_SRC..."
     cd common
     
-    # Check if we are in a modern Bazel ecosystem
+    # ========================================================================
+    # MODERN BAZEL ECOSYSTEM (Android 13 / Kernel 5.15+)
+    # ========================================================================
     if [ -f "BUILD.bazel" ]; then
-        echo ">>> Modern Bazel detected: Injecting via post_defconfig_fragments..."
+        echo ">>> Modern Bazel detected: Exposing fragment to Sandbox..."
         
         # Copy the static fragment into the Bazel package boundary
         cp "$FRAGMENT_SRC" custom_fragment
         
-        # Inject fragment targeting into the Bazel build rules
+        # Instruct Bazel to track the file as a valid build input
         echo 'exports_files(["custom_fragment"])' >> BUILD.bazel
-        sed -i 's/"trim_nonlisted_kmi": True,/"trim_nonlisted_kmi": False,/g' BUILD.bazel
-        #sed -i '/"kernel_aarch64": {/a \        "defconfig_fragments": ["custom_fragment"],' BUILD.bazel
-        sed -i '/name = "kernel_aarch64",/a \    post_defconfig_fragments = ["custom_fragment"],' BUILD.bazel
         
         # Exclude the untracked fragment from standard git tracking status
         echo "custom_fragment" >> .git/info/exclude
         
-            # --- THE FINAL BOSS BYPASS ---
-    if [ -f "modules.bzl" ]; then
-        echo ">>> Syncing Kleaf's expected module list with monolithic payloads..."
-        
-        # Define the exact modules we baked into vmlinux
-        BAKED_MODULES=(
-            "btbcm.ko" "btqca.ko" "hci_uart.ko" "mii.ko" 
-            "cdc_eem.ko" "cdc_ether.ko" "cdc_ncm.ko" 
-            "usbnet.ko" "bluetooth.ko" "rfkill.ko"
-        )
-        
-         # Dynamically erase only our baked modules from the attendance sheet
-        for mod in "${BAKED_MODULES[@]}"; do
-            sed -i "/$mod/d" modules.bzl
-        done
+        # --- KERNEL VERSION DETECTION & INJECTION ---
+        if grep -q '"trim_nonlisted_kmi"' BUILD.bazel; then
+            # ----------------------------------------------------
+            # KERNEL 6.6+ (Android 15)
+            # ----------------------------------------------------
+            echo ">>> Detected 6.6+ Architecture. Applying native defconfig injection..."
+            
+            # Disable modern module trimming
+            sed -i 's/"trim_nonlisted_kmi": True,/"trim_nonlisted_kmi": False,/g' BUILD.bazel
+            
+            # Inject standard fragment array into the target config dictionary
+            sed -i '/"kernel_aarch64": {/a \        "defconfig_fragments": ["custom_fragment"],' BUILD.bazel
 
-    fi        
+        elif grep -q '"kmi_symbol_list_strict_mode"' BUILD.bazel; then
+            # ----------------------------------------------------
+            # KERNEL 6.1 (Android 14)
+            # ----------------------------------------------------
+            echo ">>> Detected 6.1 Architecture. Disabling Bazel strict mode..."
+            sed -i 's/"kmi_symbol_list_strict_mode": True,/"kmi_symbol_list_strict_mode": False,/g' BUILD.bazel
+
+        else
+            # ----------------------------------------------------
+            # UNKNOWN/TRANSITIONAL BAZEL (Fallback)
+            # ----------------------------------------------------
+            echo ">>> Unknown Bazel version detected. Attempting generic build.config injection..."
+            cp custom_fragment arch/arm64/configs/custom_wifi.fragment
+            echo 'EXTRA_DEFCONFIG_FRAGMENTS+=" custom_wifi.fragment"' >> build.config.gki.aarch64
+        fi
         
+        # --- THE FINAL BOSS BYPASS (MONOLITHIC MODULE ALIGNMENT) ---
+        if [ -f "modules.bzl" ]; then
+            echo ">>> Syncing Kleaf's expected module list with monolithic payloads..."
+            
+            # Define the exact modules we baked into vmlinux
+            BAKED_MODULES=(
+                "btbcm.ko" "btqca.ko" "hci_uart.ko" "mii.ko" 
+                "cdc_eem.ko" "cdc_ether.ko" "cdc_ncm.ko" 
+                "usbnet.ko" "bluetooth.ko" "rfkill.ko"
+            )
+            
+             # Dynamically erase only our baked modules from the attendance sheet
+            for mod in "${BAKED_MODULES[@]}"; do
+                sed -i "/$mod/d" modules.bzl
+            done
+        fi        
+        
+    # ========================================================================
+    # LEGACY MAKE ECOSYSTEM (Kernel 5.10 and older)
+    # ========================================================================
     else
         echo ">>> Legacy Make detected (5.10 or older): Copying fragment..."
         cp "$FRAGMENT_SRC" arch/arm64/configs/custom_legacy.fragment

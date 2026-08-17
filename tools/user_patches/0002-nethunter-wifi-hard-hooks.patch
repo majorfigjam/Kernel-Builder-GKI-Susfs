@@ -40,3 +40,31 @@ Subject: [PATCH] Nethunter WiFi Makefile Hard-Hooks
 +# --- NETHUNTER DIRECTORY HOOK ---
 +obj-y += realtek/
  #
+--- a/net/rfkill/Makefile
++++ b/net/rfkill/Makefile
+@@ -1,2 +1,6 @@
+ # SPDX-License-Identifier: GPL-2.0
++
++# --- NETHUNTER RFKILL HARD HOOK ---
++obj-y += rfkill.o
++ccflags-y += -DCONFIG_RFKILL=1
+ 
+--- a/net/bluetooth/Makefile
++++ b/net/bluetooth/Makefile
+@@ -1,2 +1,6 @@
+ # SPDX-License-Identifier: GPL-2.0
++
++# --- NETHUNTER BLUETOOTH CORE HOOK ---
++obj-y += bluetooth.o
++ccflags-y += -DCONFIG_BT=1
+ 
+--- a/drivers/bluetooth/Makefile
++++ b/drivers/bluetooth/Makefile
+@@ -1,2 +1,8 @@
+ # SPDX-License-Identifier: GPL-2.0
++
++# --- NETHUNTER BLUETOOTH DRIVER HOOK ---
++obj-y += btusb.o
++obj-y += hci_uart.o
++hci_uart-y += hci_h4.o
++ccflags-y += -DCONFIG_BT_HCIBTUSB=1 -DCONFIG_BT_HCIUART=1 -DCONFIG_BT_HCIUART_H4=1
