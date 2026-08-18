@@ -1,3 +1,4 @@
+ccflags-y += -Wno-unknown-warning-option -Wno-error
 ccflags-y += -DCONFIG_LITTLE_ENDIAN
 ccflags-y += $(USER_ccflags-y) -fno-pie
 ccflags-y += -O3
@@ -13,7 +14,6 @@ ccflags-y += -Wno-missing-prototypes
 #ccflags-y += -Wno-error=cast-function-type
 #ccflags-y += -Wno-parentheses-equality
 #ccflags-y += -Wno-error=incompatible-pointer-types
-ccflags-y += -Wno-stringop-overread
 #ccflags-y += -Wno-pointer-bool-conversion
 ccflags-y += -Wno-unknown-pragmas
 #ccflags-y += -Wno-unused
