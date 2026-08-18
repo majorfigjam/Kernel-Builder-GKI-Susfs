@@ -1,10 +1,12 @@
-
 *.o
-*.o.cmd
+*.cmd
 *.ko
-*.ko.cmd
+*.cm
 Module.symvers
 modules.order
+*.mod.c
+.tmp_versions
+.cache.mk
 *.mod
-8812au.mod.c
-.8812au.mod.cmd
+*.o.d
+*.c.orig 

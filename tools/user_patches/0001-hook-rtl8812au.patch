@@ -11,10 +11,9 @@
  source "drivers/net/wireless/realtek/rtl8xxxu/Kconfig"
 --- a/drivers/net/wireless/realtek/Makefile
 +++ b/drivers/net/wireless/realtek/Makefile
-@@ -1,2 +1,6 @@
+@@ -1,2 +1,5 @@
  # SPDX-License-Identifier: GPL-2.0
 +
-+# --- NETHUNTER REALTEK HOOK ---
-+obj-y += rtl8812au/
-+ccflags-y += -DCONFIG_RTL8812AU=1
++# --- NETHUNTER REALTEK CLEAN HOOK ---
++obj-$(CONFIG_RTL88XXAU) += rtl8812au/
  #
