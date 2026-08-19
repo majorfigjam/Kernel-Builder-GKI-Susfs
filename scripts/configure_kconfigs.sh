@@ -59,7 +59,8 @@ if [ "$WITH_CUSTOM" = "true" ]; then
             # ----------------------------------------------------
             echo ">>> Detected 6.1 Architecture. Disabling Bazel strict mode..."
             sed -i 's/"kmi_symbol_list_strict_mode": True,/"kmi_symbol_list_strict_mode": False,/g' BUILD.bazel
-
+            # Inject the custom fragment array into the target config dictionary
+            sed -i '/"kernel_aarch64": {/a \        "defconfig_fragments": ["custom_fragment"],' BUILD.bazel
         else
             # ----------------------------------------------------
             # UNKNOWN/TRANSITIONAL BAZEL (Fallback)
