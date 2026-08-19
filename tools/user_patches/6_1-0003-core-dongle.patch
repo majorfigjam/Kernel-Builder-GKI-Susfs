@@ -1,0 +1,66 @@
+--- a/net/Makefile
++++ b/net/Makefile
+@@ -1 +1,6 @@
+ # SPDX-License-Identifier: GPL-2.0
++
++# --- NETHUNTER DIRECTORY ROOT HOOK ---
++override CONFIG_MAC80211 := y
++override CONFIG_RFKILL := y
++obj-y += wireless/ mac80211/ rfkill/
+ 
+--- a/net/wireless/Makefile
++++ b/net/wireless/Makefile
+@@ -1,2 +1,9 @@
+ # SPDX-License-Identifier: GPL-2.0
++
++# --- NETHUNTER HARD HOOK ---
++obj-y += wext-core.o wext-proc.o wext-spy.o wext-priv.o
++cfg80211-y += wext-compat.o wext-sme.o
++obj-y += cfg80211.o
++ccflags-y += -DCONFIG_CFG80211=1 -DCONFIG_CFG80211_WEXT=1
++ccflags-y += -DCONFIG_WIRELESS_EXT=1 -DCONFIG_WEXT_CORE=1 -DCONFIG_WEXT_PROC=1 -DCONFIG_WEXT_SPY=1 -DCONFIG_WEXT_PRIV=1
+ obj-$(CONFIG_CFG80211) += cfg80211.o
+ 
+--- a/net/mac80211/Makefile
++++ b/net/mac80211/Makefile
+@@ -1,2 +1,8 @@
+ # SPDX-License-Identifier: GPL-2.0
++
++# --- NETHUNTER HARD HOOK ---
++override CONFIG_MAC80211_MESH := y
++override CONFIG_MAC80211_RC_MINSTREL := y
++override CONFIG_MAC80211_RC_MINSTREL_HT := y
++ccflags-y += -DCONFIG_MAC80211=1 -DCONFIG_MAC80211_MESH=1 -DCONFIG_MAC80211_RC_MINSTREL=1 -DCONFIG_MAC80211_RC_MINSTREL_HT=1 -DCONFIG_MAC80211_RC_DEFAULT=\"minstrel_ht\"
+ obj-$(CONFIG_MAC80211) += mac80211.o
+ 
+--- a/drivers/net/wireless/Makefile
++++ b/drivers/net/wireless/Makefile
+@@ -1 +1,4 @@
+ # SPDX-License-Identifier: GPL-2.0
++
++# --- NETHUNTER DIRECTORY HOOK ---
++obj-y += realtek/
+ 
+--- a/net/rfkill/Makefile
++++ b/net/rfkill/Makefile
+@@ -6,4 +6,5 @@
+ rfkill-y			+= core.o
+-rfkill-$(CONFIG_RFKILL_INPUT)	+= input.o
+-obj-$(CONFIG_RFKILL)		+= rfkill.o
++rfkill-y			+= input.o
++obj-y				+= rfkill.o
+ obj-$(CONFIG_RFKILL_GPIO)	+= rfkill-gpio.o
++ccflags-y += -DCONFIG_RFKILL=1 -DCONFIG_RFKILL_INPUT=1
+ 
+--- a/lib/crypto/Makefile
++++ b/lib/crypto/Makefile
+@@ -10,7 +10,8 @@ obj-$(CONFIG_CRYPTO_LIB_CHACHA_GENERIC)		+= libchacha.o
+ obj-$(CONFIG_CRYPTO_LIB_AES)			+= libaes.o
+ libaes-y					:= aes.o
+ 
+-obj-$(CONFIG_CRYPTO_LIB_ARC4)			+= libarc4.o
++obj-y += libarc4.o
++ccflags-y += -DCONFIG_CRYPTO_LIB_ARC4=1
+ libarc4-y					:= arc4.o
+ 
+ # blake2s is used by the /dev/random driver which is always builtin
