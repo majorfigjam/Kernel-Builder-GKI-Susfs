@@ -277,7 +277,6 @@ enum TDLS_option {
 #endif /* CONFIG_TDLS */
 
 #ifndef NL80211_AUTHTYPE_SAE
-#define NL80211_AUTHTYPE_SAE 4
 #endif
 
 /*
