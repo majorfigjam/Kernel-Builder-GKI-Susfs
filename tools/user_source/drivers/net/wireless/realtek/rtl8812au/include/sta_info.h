@@ -388,8 +388,6 @@ struct sta_info {
 	_list auth_list;
 
 	unsigned int auth_seq;
-        u8 *pauth_frame;
-        u32 auth_len;
 	unsigned int authalg;
 	unsigned char chg_txt[128];
 
