@@ -69,21 +69,6 @@ if [ "$WITH_CUSTOM" = "true" ]; then
             echo 'EXTRA_DEFCONFIG_FRAGMENTS+=" custom_wifi.fragment"' >> build.config.gki.aarch64
         fi
         
-        # --- THE FINAL BOSS BYPASS (MONOLITHIC MODULE ALIGNMENT) ---
-        if [ -f "modules.bzl" ]; then
-            echo ">>> Syncing Kleaf's expected module list with monolithic payloads..."
-    
-            # Define the exact modules we baked into vmlinux via 0002 patch
-            BAKED_MODULES=(
-                "bluetooth.ko" "hci_uart.ko" "btusb.ko" "btsdio.ko" "btbcm.ko" "btqca.ko" "rfkill.ko" "rfcomm.ko" "bnep.ko" "hidp.ko" "cmtp.ko" "nfc.ko" "nci.ko" "hci.ko"
-            )
-
-             # Dynamically erase only our baked modules from the attendance sheet
-            for mod in "${BAKED_MODULES[@]}"; do
-                sed -i "/$mod/d" modules.bzl
-            done
-        fi        
-        
     # ========================================================================
     # LEGACY MAKE ECOSYSTEM (Kernel 5.10 and older)
     # ========================================================================
