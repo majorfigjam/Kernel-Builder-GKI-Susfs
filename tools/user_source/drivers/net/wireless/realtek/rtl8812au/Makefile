@@ -1,3 +1,4 @@
+ccflags-y += -DCONFIG_IOCTL_CFG80211 -DRTW_USE_CFG80211_STA_EVENT -DCONFIG_RADIO_WORK -DCONFIG_80211N_HT -DCONFIG_80211AC_VHT
 ccflags-y += -Wno-unknown-warning-option -Wno-error
 ccflags-y += -DCONFIG_LITTLE_ENDIAN
 ccflags-y += $(USER_ccflags-y) -fno-pie
