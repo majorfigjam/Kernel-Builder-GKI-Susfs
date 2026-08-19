@@ -16806,7 +16806,22 @@ int rtw_sae_preprocess(_adapter *adapter, const u8 *buf, u32 len, u8 tx)
 		psta = rtw_get_stainfo(pstapriv, GetAddr1Ptr(buf));
 		if (psta) {
 			_enter_critical_bh(&psta->lock, &irqL);
+			if (psta->pauth_frame) {
+				rtw_mfree(psta->pauth_frame, psta->auth_len);
+				psta->pauth_frame = NULL;
+				psta->auth_len = 0;
+			}
 
+			psta->pauth_frame =  rtw_zmalloc(len);
+			if (psta->pauth_frame) {
+				_rtw_memcpy(psta->pauth_frame, buf, len);
+				psta->auth_len = len;
+			}
+			_exit_critical_bh(&psta->lock, &irqL);
+
+			ret = 2;
+		}
+	}
 exit:
 	return ret;
 #else

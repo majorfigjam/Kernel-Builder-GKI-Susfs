@@ -10154,6 +10154,17 @@ void rtw_cfg80211_external_auth_status(struct wiphy *wiphy, struct net_device *d
 		}
 
 		_enter_critical_bh(&psta->lock, &irqL);
+		if ((psta->auth_len != 0) && (psta->pauth_frame != NULL)) {
+			buf =  rtw_zmalloc(psta->auth_len);
+			if (buf) {
+				_rtw_memcpy(buf, psta->pauth_frame, psta->auth_len);
+				len = psta->auth_len;
+			}
+
+			rtw_mfree(psta->pauth_frame, psta->auth_len);
+			psta->pauth_frame = NULL;
+			psta->auth_len = 0;
+		}
 		_exit_critical_bh(&psta->lock, &irqL);
 
 		if (buf) {
