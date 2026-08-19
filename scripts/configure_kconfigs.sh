@@ -59,8 +59,14 @@ if [ "$WITH_CUSTOM" = "true" ]; then
             # ----------------------------------------------------
             echo ">>> Detected 6.1 Architecture. Disabling Bazel strict mode..."
             sed -i 's/"kmi_symbol_list_strict_mode": True,/"kmi_symbol_list_strict_mode": False,/g' BUILD.bazel
-            # Inject the custom fragment array into the target config dictionary
-            sed -i '/"kernel_aarch64": {/a \        "defconfig_fragments": ["custom_fragment"],' BUILD.bazel
+            
+            #  Kill module trimming in the legacy config wrapper
+            echo 'TRIM_NONLISTED_KMI=0' >> build.config.gki.aarch64
+    
+            # Inject the custom fragment natively
+            cp custom_fragment arch/arm64/configs/custom_wifi.fragment
+            echo 'EXTRA_DEFCONFIG_FRAGMENTS+=" custom_wifi.fragment"' >> build.config.gki.aarch64
+            
         else
             # ----------------------------------------------------
             # UNKNOWN/TRANSITIONAL BAZEL (Fallback)
