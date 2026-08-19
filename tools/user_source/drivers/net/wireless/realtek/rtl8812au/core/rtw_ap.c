@@ -3874,11 +3874,6 @@ u8 ap_free_sta(_adapter *padapter, struct sta_info *psta, bool active, u16 reaso
 	_enter_critical_bh(&psta->lock, &irqL);
 	psta->state &= ~(_FW_LINKED | WIFI_UNDER_KEY_HANDSHAKE);
 
-	if ((psta->auth_len != 0) && (psta->pauth_frame != NULL)) {
-		rtw_mfree(psta->pauth_frame, psta->auth_len);
-		psta->pauth_frame = NULL;
-		psta->auth_len = 0;
-	}
 	_exit_critical_bh(&psta->lock, &irqL);
 
 	if (!MLME_IS_MESH(padapter)) {
