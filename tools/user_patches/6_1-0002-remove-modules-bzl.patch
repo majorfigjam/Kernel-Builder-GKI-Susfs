@@ -1,5 +1,5 @@
 diff --git a/modules.bzl b/modules.bzl
-index 52d92225a..3705c8b32 100644
+index 52d92225a..15542d874 100644
 --- a/modules.bzl
 +++ b/modules.bzl
 @@ -9,10 +9,6 @@ This module contains a full list of kernel modules
@@ -13,7 +13,7 @@ index 52d92225a..3705c8b32 100644
      "drivers/net/can/dev/can-dev.ko",
      "drivers/net/can/slcan/slcan.ko",
      "drivers/net/can/vcan.ko",
-@@ -24,35 +20,11 @@ _COMMON_GKI_MODULES_LIST = [
+@@ -24,49 +20,16 @@ _COMMON_GKI_MODULES_LIST = [
      "drivers/net/ppp/pppox.ko",
      "drivers/net/ppp/pptp.ko",
      "drivers/net/slip/slhc.ko",
@@ -49,9 +49,10 @@ index 52d92225a..3705c8b32 100644
      "net/can/can.ko",
      "net/can/can-bcm.ko",
      "net/can/can-gw.ko",
-@@ -61,12 +33,6 @@ _COMMON_GKI_MODULES_LIST = [
-     "net/ieee802154/ieee802154.ko",
-     "net/ieee802154/ieee802154_socket.ko",
+     "net/can/can-raw.ko",
+-    "net/ieee802154/6lowpan/ieee802154_6lowpan.ko",
+-    "net/ieee802154/ieee802154.ko",
+-    "net/ieee802154/ieee802154_socket.ko",
      "net/l2tp/l2tp_core.ko",
 -    "net/l2tp/l2tp_ppp.ko",
 -    "net/mac802154/mac802154.ko",
