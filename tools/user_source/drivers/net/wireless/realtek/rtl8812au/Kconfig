@@ -1,6 +1,11 @@
 config 88XXAU
 	tristate "Realtek 88XXau USB WiFi"
-	depends on USB
+	depends on USB && CFG80211
+	select CFG80211_WEXT
+	select CFG80211_WEXT_EXPORT
+	select WIRELESS_EXT
+	select WEXT_CORE
+	select WEXT_PRIV
 	help
 	  Help message of 88XXau
 
