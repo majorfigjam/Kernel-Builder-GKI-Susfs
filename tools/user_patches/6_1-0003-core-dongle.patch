@@ -10,10 +10,12 @@
  
 --- a/net/wireless/Makefile
 +++ b/net/wireless/Makefile
-@@ -1,2 +1,9 @@
+@@ -1,2 +1,11 @@
  # SPDX-License-Identifier: GPL-2.0
 +
 +# --- NETHUNTER HARD HOOK ---
++override CONFIG_CFG80211 := y
++override CONFIG_CFG80211_WEXT := y
 +obj-y += wext-core.o wext-proc.o wext-spy.o wext-priv.o
 +cfg80211-y += wext-compat.o wext-sme.o
 +obj-y += cfg80211.o
