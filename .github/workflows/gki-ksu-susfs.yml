@@ -300,21 +300,39 @@ jobs:
             echo ">>> No raw source files found in tools/user_source/."
           fi
         shell: bash
-
+        
       - name: Apply User Patches
         if: ${{ inputs.custom_patches }}
         run: |
           PATCH_DIR="$(pwd)/tools/user_patches"
+          
+          # Extract BASE_VER from target_version input (e.g., 6.1.145 -> 6.1)
+          BASE_VER=$(echo "${{ inputs.target_version }}" | grep -oE '[0-9]+\.[0-9]+' | head -n 1)
+          echo ">>> Target Base Version for patches: $BASE_VER"
 
           # Check if the directory exists and contains any .patch files
           if [ -d "$PATCH_DIR" ] && ls "$PATCH_DIR"/*.patch >/dev/null 2>&1; then
-            echo ">>> User patches detected in tools/user_patches/. Applying to common tree..."
+            echo ">>> User patches detected in tools/user_patches/. Filtering by version..."
             cd kernel_workspace/common
 
-            # Iterate through and apply every patch found
+            # Iterate through every patch found
             for patch_file in "$PATCH_DIR"/*.patch; do
-              echo "  -> Applying $(basename "$patch_file")..."
-              patch -p1 --no-backup-if-mismatch < "$patch_file"
+              filename=$(basename "$patch_file")
+              
+              # Condition 1: Patch exactly matches the current BASE_VER (e.g., 6.1-0001.patch)
+              if [[ "$filename" == "${BASE_VER}-"* ]]; then
+                echo "  -> [MATCH] Applying version-specific patch: $filename..."
+                patch -p1 --no-backup-if-mismatch < "$patch_file"
+                
+              # Condition 2: Patch starts with ANY version prefix (e.g., 6.6-0005.patch)
+              elif [[ "$filename" =~ ^[0-9]+\.[0-9]+- ]]; then
+                echo "  -> [SKIP] Ignoring patch for different kernel version: $filename"
+                
+              # Condition 3: Patch has no version prefix (e.g., 0007-generic.patch)
+              else
+                echo "  -> [GENERIC] Applying generic patch: $filename..."
+                patch -p1 --no-backup-if-mismatch < "$patch_file"
+              fi
             done
 
             cd ../..
@@ -480,7 +498,7 @@ jobs:
           author=komodo-builder
           description=Dynamically injects out-of-tree .ko drivers into the GKI kernel after boot.
           EOF
-          
+           
           # 2. Generate the late-start service script
           cat << 'EOF' > out/final/kmod_payload/service.sh
           #!/system/bin/sh
@@ -491,12 +509,14 @@ jobs:
               sleep 1
           done
           
-          # Forcefully inject every module stored in this folder
-          for ko in $MODDIR/*.ko; do
-              insmod "$ko"
+          # Multi-pass injection to automatically resolve .ko dependencies
+          for i in 1 2 3; do
+              for ko in $MODDIR/*.ko; do
+                  insmod "$ko" >/dev/null 2>&1
+              done
           done
           EOF
-          
+
           chmod +x out/final/kmod_payload/service.sh
           
           # 3. Copy the harvested .ko files into the module root
