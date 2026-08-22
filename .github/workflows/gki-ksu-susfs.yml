@@ -402,6 +402,19 @@ jobs:
             fi
           
             # ---------------------------------------------------------
+            # DYNAMIC HARVEST: Locate and copy the core Image
+            # ---------------------------------------------------------
+            echo ">>> Locating kernel Image..."
+            IMAGE_PATH=$(find . -name "Image" -type f | grep -v "AnyKernel3" | head -n 1)
+            if [ -n "$IMAGE_PATH" ]; then
+              cp -f "$IMAGE_PATH" AnyKernel3-Builder/
+              echo ">>> Successfully copied Image from: $IMAGE_PATH"
+            else
+              echo ">>> ERROR: Kernel Image not found in workspace!"
+              exit 1
+            fi
+          
+            # ---------------------------------------------------------
             # DYNAMIC HARVEST: Locate and package .ko modules for AK3
             # ---------------------------------------------------------
             echo ">>> Harvesting compiled .ko modules..."
@@ -451,6 +464,56 @@ jobs:
             zip -r9 "../out/final/${{ inputs.root_manager }}-${{ inputs.target_version }}-AK3.zip" *
             cd ..
           fi
+
+          # ---------------------------------------------------------
+          # NEW: GENERATE KSU/MAGISK MODULE FOR KERNEL OBJECTS
+          # ---------------------------------------------------------
+          echo ">>> Generating Magisk/KSU Module for Out-of-Tree Modules..."
+          mkdir -p out/final/kmod_payload
+          
+          # 1. Generate module.prop
+          cat << 'EOF' > out/final/kmod_payload/module.prop
+          id=gki-wifi-modules
+          name=GKI Out-of-Tree Modules
+          version=1.0
+          versionCode=1
+          author=komodo-builder
+          description=Dynamically injects out-of-tree .ko drivers into the GKI kernel after boot.
+          EOF
+          
+          # 2. Generate the late-start service script
+          cat << 'EOF' > out/final/kmod_payload/service.sh
+          #!/system/bin/sh
+          MODDIR=${0%/*}
+          
+          # Wait for Android to finish booting to prevent vendor driver collisions
+          until [ "$(getprop sys.boot_completed)" = "1" ]; do
+              sleep 1
+          done
+          
+          # Forcefully inject every module stored in this folder
+          for ko in $MODDIR/*.ko; do
+              insmod "$ko"
+          done
+          EOF
+          
+          chmod +x out/final/kmod_payload/service.sh
+          
+          # 3. Copy the harvested .ko files into the module root
+          cp AnyKernel3-Builder/modules/vendor/lib/modules/*.ko out/final/kmod_payload/ 2>/dev/null || true
+          
+          # 4. Zip it up as a flashable artifact (if .ko files exist) and clean up
+          if ls out/final/kmod_payload/*.ko 1> /dev/null 2>&1; then
+            cd out/final/kmod_payload
+            zip -r9 "../${SAFE_BUILD_NAME}-Module.zip" *
+            cd ../../..
+            echo ">>> Successfully generated ${SAFE_BUILD_NAME}-Module.zip"
+          else
+            echo ">>> No .ko modules found. Skipping module generation."
+          fi
+          
+          # Clean up the staging folder so it doesn't clutter the final artifact zip
+          rm -rf out/final/kmod_payload
 
           echo ">>> Final Artifact Directory:"
           ls -lah out/final/
