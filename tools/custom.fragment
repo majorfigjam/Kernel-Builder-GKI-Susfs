@@ -1,7 +1,21 @@
 # tools/custom.fragment
+# ==============================================================================
+# CUSTOM ADVANCED CONFIGS
+# ==============================================================================
+
+# --- CORE WIREGUARD ---
 CONFIG_WIREGUARD=y
 CONFIG_NET_UDP_TUNNEL=y
 CONFIG_NETFILTER_XT_MATCH_HASHLIMIT=y
 CONFIG_NETFILTER_XT_MATCH_LENGTH=y
 CONFIG_NETFILTER_XT_MATCH_MARK=y
 CONFIG_NETFILTER_XT_MATCH_POLICY=y
+
+# --- MAC80211 CRYPTO DEPENDENCIES ---
+# Explicitly requested because our God-Mode Makefile bypass 
+# prevents Kconfig from auto-selecting them.
+CONFIG_CRYPTO_MICHAEL_MIC=y
+CONFIG_CRYPTO_LIB_ARC4=y
+CONFIG_CRYPTO_CCM=y
+CONFIG_CRYPTO_GCM=y
+CONFIG_CRYPTO_CMAC=y
