@@ -1,59 +1,59 @@
 diff --git a/drivers/net/wireless/Makefile b/drivers/net/wireless/Makefile
-index a61cf6c90..4c86f27d0 100644
+index a61cf6c90..1f55eb1ed 100644
 --- a/drivers/net/wireless/Makefile
 +++ b/drivers/net/wireless/Makefile
-@@ -1,3 +1,4 @@
+@@ -32,3 +32,4 @@ obj-$(CONFIG_USB_NET_RNDIS_WLAN)	+= rndis_wlan.o
+ obj-$(CONFIG_MAC80211_HWSIM)	+= mac80211_hwsim.o
+ 
+ obj-$(CONFIG_VIRT_WIFI)	+= virt_wifi.o
 +obj-m += mediatek/mt76/ mediatek/mt76/mt76x2/
- # SPDX-License-Identifier: GPL-2.0
- #
- # Makefile for the Linux Wireless network device drivers.
 diff --git a/drivers/net/wireless/mediatek/mt76/Makefile b/drivers/net/wireless/mediatek/mt76/Makefile
-index c78ae4b89..42a385493 100644
+index c78ae4b89..5a6cae3f4 100644
 --- a/drivers/net/wireless/mediatek/mt76/Makefile
 +++ b/drivers/net/wireless/mediatek/mt76/Makefile
-@@ -1,3 +1,5 @@
+@@ -35,3 +35,5 @@ obj-$(CONFIG_MT7603E) += mt7603/
+ obj-$(CONFIG_MT7615_COMMON) += mt7615/
+ obj-$(CONFIG_MT7915E) += mt7915/
+ obj-$(CONFIG_MT7921_COMMON) += mt7921/
 +ccflags-y += -DCONFIG_MT76_CORE_MODULE=1 -DCONFIG_MT76_USB_MODULE=1 -DCONFIG_MT76x02_LIB_MODULE=1 -DCONFIG_MT76x02_USB_MODULE=1 -DCONFIG_MAC80211_MODULE=1 -DCONFIG_CFG80211_MODULE=1
 +obj-m += mt76.o mt76-usb.o mt76x02-lib.o mt76x02-usb.o
- # SPDX-License-Identifier: GPL-2.0-only
- obj-$(CONFIG_MT76_CORE) += mt76.o
- obj-$(CONFIG_MT76_USB) += mt76-usb.o
 diff --git a/drivers/net/wireless/mediatek/mt76/mt76x2/Makefile b/drivers/net/wireless/mediatek/mt76/mt76x2/Makefile
-index caf089538..0ef0c9502 100644
+index caf089538..b2f848191 100644
 --- a/drivers/net/wireless/mediatek/mt76/mt76x2/Makefile
 +++ b/drivers/net/wireless/mediatek/mt76/mt76x2/Makefile
-@@ -1,3 +1,5 @@
+@@ -13,3 +13,5 @@ mt76x2e-y := \
+ mt76x2u-y := \
+ 	usb.o usb_init.o usb_main.o usb_mac.o usb_mcu.o \
+ 	usb_phy.o
 +ccflags-y += -DCONFIG_MT76x2_COMMON_MODULE=1 -DCONFIG_MT76x2U_MODULE=1 -DCONFIG_MAC80211_MODULE=1 -DCONFIG_CFG80211_MODULE=1
 +obj-m += mt76x2-common.o mt76x2u.o
- # SPDX-License-Identifier: GPL-2.0-only
- obj-$(CONFIG_MT76x2_COMMON) += mt76x2-common.o
- obj-$(CONFIG_MT76x2E) += mt76x2e.o
 diff --git a/net/Makefile b/net/Makefile
-index 103cd8d61..7cbac600c 100644
+index 103cd8d61..2c3f6fc3c 100644
 --- a/net/Makefile
 +++ b/net/Makefile
-@@ -1,3 +1,4 @@
+@@ -79,3 +79,4 @@ obj-$(CONFIG_NET_NCSI)		+= ncsi/
+ obj-$(CONFIG_XDP_SOCKETS)	+= xdp/
+ obj-$(CONFIG_MPTCP)		+= mptcp/
+ obj-$(CONFIG_MCTP)		+= mctp/
 +obj-m += wireless/ mac80211/
- # SPDX-License-Identifier: GPL-2.0
- #
- # Makefile for the linux networking.
 diff --git a/net/mac80211/Makefile b/net/mac80211/Makefile
-index b8de44da1..676b74496 100644
+index b8de44da1..a1a041522 100644
 --- a/net/mac80211/Makefile
 +++ b/net/mac80211/Makefile
-@@ -1,3 +1,6 @@
+@@ -66,3 +66,6 @@ rc80211_minstrel-$(CONFIG_MAC80211_DEBUGFS) += \
+ mac80211-$(CONFIG_MAC80211_RC_MINSTREL) += $(rc80211_minstrel-y)
+ 
+ ccflags-y += -DDEBUG
 +ccflags-y += -DCONFIG_MAC80211_MODULE=1 -DCONFIG_MAC80211=1 -DCONFIG_CFG80211_MODULE=1 -DCONFIG_CFG80211=1 -DCONFIG_MAC80211_HAS_RC=1 -DCONFIG_MAC80211_RC_MINSTREL=1 -DCONFIG_MAC80211_RC_MINSTREL_HT=1 -DCONFIG_MAC80211_RC_DEFAULT=\"minstrel_ht\"
 +obj-m += mac80211.o
 +mac80211-y += rc80211_minstrel.o rc80211_minstrel_ht.o
- # SPDX-License-Identifier: GPL-2.0
- obj-$(CONFIG_MAC80211) += mac80211.o
- 
 diff --git a/net/wireless/Makefile b/net/wireless/Makefile
-index 527ae669f..2c72899be 100644
+index 527ae669f..23e6234ca 100644
 --- a/net/wireless/Makefile
 +++ b/net/wireless/Makefile
-@@ -1,3 +1,5 @@
+@@ -58,3 +58,5 @@ $(obj)/extra-certs.c: $(CONFIG_CFG80211_EXTRA_REGDB_KEYDIR) \
+ 	  ) > $@)
+ 
+ clean-files += shipped-certs.c extra-certs.c
 +ccflags-y += -DCONFIG_CFG80211_MODULE=1 -DCONFIG_CFG80211=1
 +obj-m += cfg80211.o
- # SPDX-License-Identifier: GPL-2.0
- obj-$(CONFIG_CFG80211) += cfg80211.o
- obj-$(CONFIG_LIB80211) += lib80211.o
