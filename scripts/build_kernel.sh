@@ -12,6 +12,12 @@ echo ">>> Marking repo as clean (sanitizes all custom configuration & source mod
 # Dynamically safeguards all modifications 
 git -C common ls-files -m | xargs -r git -C common update-index --assume-unchanged
 
+# --- Inject MediaTek Firmware for Built-in (=y) Kconfig ---
+echo ">>> Injecting MediaTek Firmware into Kernel Source..."
+mkdir -p common/firmware/mediatek
+curl -L -o common/firmware/mediatek/mt7662_rom_patch.bin "https://git.kernel.org/pub/scm/linux/kernel/git/firmware/linux-firmware.git/plain/mediatek/mt7662_rom_patch.bin"
+curl -L -o common/firmware/mediatek/mt7662.bin "https://git.kernel.org/pub/scm/linux/kernel/git/firmware/linux-firmware.git/plain/mediatek/mt7662.bin"
+
 # Build method 
 if [ -f "tools/bazel" ]; then
     echo ">>> Modern Kleaf/Bazel ecosystem detected..."
