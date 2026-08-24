@@ -4,8 +4,8 @@
 
 echo ">>> Executing Integration Module for KernelSU-Next..."
 
-if [[ "${USE_DYNAMIC_TRANSPLANT}" == "true" ]]; then
-    echo ">>> [CANARY] Executing Automated Dynamic Transplant for KernelSU-Next..."
+if [ "${USE_DYNAMIC_TRANSPLANT}" == "true" ]; then
+    echo ">>> [DYNAMIC] Executing Automated Dynamic Transplant for KernelSU-Next..."
     
     echo ">>> 1. Cloning pristine official KernelSU-Next..."
     git clone https://github.com/KernelSU-Next/KernelSU-Next.git "${MANAGER_DIR}"
@@ -26,22 +26,22 @@ if [[ "${USE_DYNAMIC_TRANSPLANT}" == "true" ]]; then
     echo "  -> Target Tag: $CALCULATED_TAG"
 
     if [ "${INTEGRATE_SUSFS}" == "true" ]; then
-    echo ">>> 2. Fetching Pershoot's live laboratory..."
-    git remote add pershoot https://github.com/pershoot/KernelSU-Next.git
-    git fetch pershoot dev-susfs
+        echo ">>> 2. Fetching Pershoot's live laboratory..."
+        git remote add pershoot https://github.com/pershoot/KernelSU-Next.git
+        git fetch pershoot dev-susfs
 
-    echo ">>> Configuring dummy Git identity for transplant operations..."
-    git config --global user.email "runner@github.actions"
-    git config --global user.name "GitHub Actions Canary"
+        echo ">>> Configuring dummy Git identity for transplant operations..."
+        git config --global user.email "runner@github.actions"
+        git config --global user.name "GitHub Actions Canary"
 
-    echo ">>> 3. Squashing and merging SuSFS features onto upstream tree..."
-    if ! git merge --squash pershoot/dev-susfs; then
-        echo "[-] CRITICAL: Merge conflict detected during squash merge!"
-        git --no-pager diff --diff-filter=U
-        exit 1
-    fi
-    
-    git commit -m "Merge susfs features from pershoot"
+        echo ">>> 3. Squashing and merging SuSFS features onto upstream tree..."
+        if ! git merge --squash pershoot/dev-susfs; then
+            echo "[-] CRITICAL: Merge conflict detected during squash merge!"
+            git --no-pager diff --diff-filter=U
+            exit 1
+        fi
+        
+        git commit -m "Merge susfs features from pershoot"
     fi
 
     # Lock in variables for the Kbuild Gatekeeper
@@ -49,31 +49,41 @@ if [[ "${USE_DYNAMIC_TRANSPLANT}" == "true" ]]; then
     CALCULATED_COUNT=$(git rev-list --count "${UPSTREAM_HASH}")
     
 else
-    echo ">>> [STABLE/TEST] Cloning custom pipeline branch: ${KSU_VARIANT_REF} from ${KSU_VARIANT_REPO_URL}..."
-    git clone "${KSU_VARIANT_REPO_URL}" -b "${KSU_VARIANT_REF}" "${MANAGER_DIR}"
+    echo ">>> Safe fallback channel detected. Bypassing dynamic squash merge..."
+    echo ">>> [STABLE/TEST] Cloning custom pipeline branch: ${KSU_VARIANT_REF}..."
+    
+    # Safest Git syntax: flags before the URL
+    git clone -b "${KSU_VARIANT_REF}" "${KSU_VARIANT_REPO_URL}" "${MANAGER_DIR}"
 
     # Prevent setup.sh from performing a redundant clone
     ln -sfn "../${MANAGER_DIR}" "common/${MANAGER_DIR}"
 
     echo ">>> Executing native setup.sh..."
     cd common
+    # FIX 1: Pass the dynamic reference
     bash "${MANAGER_DIR}/kernel/setup.sh" "${KSU_VARIANT_REF}"
     cd ..
 
     cd "${MANAGER_DIR}"
+    
+    # FIX 2: Lock the upstream tracking variable to the dynamic branch for the Gatekeeper
+    UPSTREAM_BRANCH="${KSU_VARIANT_REF}"
+    
     UPSTREAM_REPO="KernelSU-Next/KernelSU-Next"
-    UPSTREAM_BRANCH="dev"
+    # KernelSU-Next's official repository uses 'dev' instead of 'main'
+    OFFICIAL_TRACKING_BRANCH="dev" 
 
     # If building custom manager on test channel, use HEAD so kernel and APK versions match perfectly.
     if [[ "${BUILD_CHANNEL:-}" == "test" ]]; then
         echo ">>> [TEST CHANNEL] Bypassing upstream sync. Using custom HEAD for version match..."
         UPSTREAM_HASH=$(git rev-parse HEAD)
     else
+        # FIX 3: Fetch official upstream 'dev' branch and calculate pristine Merge-Base
         echo ">>> Locating official upstream sync point for ${UPSTREAM_REPO}..."
-        git fetch --quiet "https://github.com/${UPSTREAM_REPO}.git" "${UPSTREAM_BRANCH}"
+        git fetch --quiet "https://github.com/${UPSTREAM_REPO}.git" "${OFFICIAL_TRACKING_BRANCH}"
         RAW_BASE=$(git merge-base HEAD FETCH_HEAD)
 
-        # Walk backward down the official mainline branch
+        # FIX 4: Walk backward down the pristine mainline branch
         set +o pipefail
         UPSTREAM_HASH=$(git log --first-parent "${RAW_BASE}" --format="%H" -n 1 -- . ":!website/" ":!docs/" ":!*.md" ":!.github/")
         set -o pipefail

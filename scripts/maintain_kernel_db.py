@@ -102,7 +102,8 @@ def main():
     valid_branches.sort(key=branch_sort_key)
  
     # 4. Scrape logic
-    tag_pattern = re.compile(r"Merge tag 'android\d+-(\d+\.\d+\.\d+)_r\w*'")
+    # Catch official tags AND raw upstream LTS merges
+    tag_pattern = re.compile(r"Merge tag 'android\d+-(\d+\.\d+\.\d+)_r\w*'|Merge (\d+\.\d+\.\d+) into android\d+-\d+\.\d+-lts")
     added_count = 0
     upgraded_count = 0
     
@@ -152,7 +153,7 @@ def main():
                 match = tag_pattern.search(message)
                 
                 if match:
-                    kernel_version = match.group(1)
+                    kernel_version = match.group(1) or match.group(2)
                     
                     # Validation
                     if kernel_version.startswith(f"{base}."):

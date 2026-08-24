@@ -1,56 +1,65 @@
 #!/usr/bin/env bash
 # scripts/inject_ReSukiSU.sh
-# Dynamic SuSFS integration module for ReSukiSU (and SukiSU-Ultra)
 
-echo ">>> Executing Integration Module for ${VARIANT}..."
+echo ">>> Executing Integration Module for ReSukiSU..."
 
-echo ">>> 1. Cloning pristine official ${VARIANT} upstream..."
-git clone "https://github.com/${VARIANT}/${VARIANT}.git" "${MANAGER_DIR}"
+if [ "${USE_DYNAMIC_TRANSPLANT}" == "true" ]; then
+    echo ">>> 1. Cloning pristine official ReSukiSU upstream..."
+    git clone https://github.com/ReSukiSU/ReSukiSU.git "${MANAGER_DIR}"
+    
+    ln -sfn "../${MANAGER_DIR}" "common/${MANAGER_DIR}"
+    cd common
+    bash "${MANAGER_DIR}/kernel/setup.sh" main
+    cd ..
+    
+    cd "${MANAGER_DIR}"
+    UPSTREAM_HASH=$(git log -n 1 --format="%H" -- . ":!website/" ":!docs/" ":!*.md" ":!.github/")
+    CALCULATED_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "v0.0.0")
+    CALCULATED_COUNT=$(git rev-list --count "${UPSTREAM_HASH}")
+    UPSTREAM_BRANCH="main"
 
-# Prevent setup.sh from performing a redundant clone
-ln -sfn "../${MANAGER_DIR}" "common/${MANAGER_DIR}"
-
-echo ">>> Executing native setup.sh to initialize branch..."
-cd common
-bash "${MANAGER_DIR}/kernel/setup.sh" main
-cd ..
-
-cd "${MANAGER_DIR}"
-
-# ========================================================================
-# CAPTURE HASHES FOR SANDBOX GATEKEEPER
-# ========================================================================
-UPSTREAM_HASH=$(git log -n 1 --format="%H" -- . ":!website/" ":!docs/" ":!*.md" ":!.github/")
-CALCULATED_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "v0.0.0")
-CALCULATED_COUNT=$(git rev-list --count "${UPSTREAM_HASH}")
-UPSTREAM_BRANCH="main"
+    echo ">>> 2. Applying dynamic Kleaf bypass & Kconfig overrides..."
+    sed -i 's/default KSU_TRACEPOINT_HOOK/default KSU_SUSFS/g' kernel/Kconfig
+    sed -i 's/bool "Tracepoint Syscall Redirect"/bool "Tracepoint Syscall Redirect"\n\t\tdepends on n/g' kernel/Kconfig
+    sed -i 's/depends on KSU != m/depends on n/g' kernel/Kconfig
+    sed -i 's/ifeq ($(shell test -e $(srctree)\/fs\/susfs.c.*/ifeq (0,0)/g' kernel/Kbuild
+    sed -i 's/cat $(srctree)\/include\/linux\/susfs.h |/cat $(srctree)\/include\/linux\/susfs.h 2>\/dev\/null |/g' kernel/Kbuild
+    cd ..
+else
+    echo ">>> Safe fallback channel detected. Cloning custom pipeline branch..."
+    git clone -b "${KSU_VARIANT_REF}" "${KSU_VARIANT_REPO_URL}" "${MANAGER_DIR}"
+    
+    ln -sfn "../${MANAGER_DIR}" "common/${MANAGER_DIR}"
+    cd common
+    # FIX 1: Pass the dynamic reference instead of hardcoded 'main'
+    bash "${MANAGER_DIR}/kernel/setup.sh" "${KSU_VARIANT_REF}"
+    cd ..
+    
+    # FIX 2: Lock the upstream tracking variable to the dynamic branch
+    UPSTREAM_BRANCH="${KSU_VARIANT_REF}"
+    
+    cd "${MANAGER_DIR}"
+    
+    # FIX 3: Fetch official upstream and calculate the pristine Merge-Base
+    OFFICIAL_REPO_URL="https://github.com/ReSukiSU/ReSukiSU.git"
+    echo ">>> Locating official upstream sync point for ReSukiSU/ReSukiSU..."
+    
+    # We fetch 'main' from the official repo because that is their core tracking branch
+    git fetch --quiet "${OFFICIAL_REPO_URL}" main
+    RAW_BASE=$(git merge-base HEAD FETCH_HEAD)
+    
+    # FIX 4: Calculate Hash, Count, and Tag starting strictly from the pristine base commit
+    set +o pipefail
+    UPSTREAM_HASH=$(git log --first-parent "${RAW_BASE}" --format="%H" -n 1 -- . ":!website/" ":!docs/" ":!*.md" ":!.github/")
+    set -o pipefail
+    
+    CALCULATED_COUNT=$(git rev-list --count "${UPSTREAM_HASH}" 2>/dev/null || echo "11950")
+    CALCULATED_TAG=$(git describe --tags --abbrev=0 "${UPSTREAM_HASH}" 2>/dev/null || echo "v0.0.0")
+    
+    cd ..
+fi
 
 echo "  -> Target Tag: $CALCULATED_TAG"
 echo "  -> Target Hash: $UPSTREAM_HASH"
 echo "  -> Target Count: $CALCULATED_COUNT"
-
-# ========================================================================
-# KLEAF BYPASS & KCONFIG INJECTION (Robust sed strategy)
-# ========================================================================
-if [ "${INTEGRATE_SUSFS}" == "true" ]; then
-echo ">>> 2. Applying dynamic Kleaf bypass & Kconfig overrides..."
-# 1. Modify Kconfig to force KSU_SUSFS as default and hide the other options
-
-sed -i 's/default KSU_TRACEPOINT_HOOK/default KSU_SUSFS/g' kernel/Kconfig
-sed -i 's/bool "Tracepoint Syscall Redirect"/bool "Tracepoint Syscall Redirect"\n\t\tdepends on n/g' kernel/Kconfig
-sed -i 's/depends on KSU != m/depends on n/g' kernel/Kconfig
-
-# 2. Modify Kbuild to bypass the strict sandbox test -e check
-# We force the 'ifeq' to (0,0) so it always evaluates as true and extracts the SUSFS_VERSION
-sed -i 's/ifeq ($(shell test -e $(srctree)\/fs\/susfs.c.*/ifeq (0,0)/g' kernel/Kbuild
-
-# Silence the 'cat' error if the susfs.h file is temporarily hidden by the Kleaf sandbox
-sed -i 's/cat $(srctree)\/include\/linux\/susfs.h |/cat $(srctree)\/include\/linux\/susfs.h 2>\/dev\/null |/g' kernel/Kbuild
-
-echo ">>> 3. Kleaf bypass applied successfully."
-fi
-
-# Step back out to kernel_workspace
-cd .. 
-
-echo ">>> ${VARIANT} integration complete."
+echo ">>> ReSukiSU integration complete."

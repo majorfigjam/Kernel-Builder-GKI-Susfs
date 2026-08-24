@@ -24,26 +24,56 @@ if [ "$WITH_CUSTOM" = "true" ]; then
 
     echo ">>> Integrating Kconfig Configurations from $FRAGMENT_SRC..."
     cd common
-    
-    # Check if we are in a modern Bazel ecosystem
-    if [ -f "BUILD.bazel" ]; then
-        echo ">>> Modern Bazel detected: Injecting via post_defconfig_fragments..."
-        
-        # Copy the static fragment into the Bazel package boundary
-        cp "$FRAGMENT_SRC" custom_fragment
-        
-        # Inject fragment targeting into the Bazel build rules
-        echo 'exports_files(["custom_fragment"])' >> BUILD.bazel
-        sed -i '/name = "kernel_aarch64",/a \    post_defconfig_fragments = ["custom_fragment"],' BUILD.bazel
-        
-        # Exclude the untracked fragment from standard git tracking status
-        echo "custom_fragment" >> .git/info/exclude
 
+    # ========================================================================
+    # MODERN BAZEL ECOSYSTEM (Kernel 6.1, 6.6, 6.12+)
+    # ========================================================================
+    if [ -f "BUILD.bazel" ]; then
+        echo ">>> Modern Bazel detected: Exposing fragment to Sandbox..."
+        cp "$FRAGMENT_SRC" custom_fragment
+
+        # --- KERNEL VERSION DETECTION & INJECTION ---
+        BASE_VER=$(echo "${MANIFEST_BRANCH:-}" | grep -oE '[0-9]+\.[0-9]+' | head -n 1)
+
+        if [[ "$BASE_VER" == "6.6" || "$BASE_VER" == "6.12" ]]; then
+            # ----------------------------------------------------
+            # KERNEL 6.6+ (Android 15+)
+            # ----------------------------------------------------
+            echo ">>> Detected 6.6+ Architecture. Applying native defconfig injection..."
+            
+            # Disable modern module trimming
+            sed -i 's/"trim_nonlisted_kmi": True,/"trim_nonlisted_kmi": False,/g' BUILD.bazel
+            
+            # Inject standard fragment array into the target config dictionary
+            sed -i '/"kernel_aarch64": {/a \        "defconfig_fragments": ["custom_fragment"],' BUILD.bazel
+
+        elif [[ "$BASE_VER" == "6.1" ]]; then
+            # ----------------------------------------------------
+            # KERNEL 6.1 (Android 14)
+            # ----------------------------------------------------
+            echo ">>> Detected 6.1 Architecture. Disabling Bazel strict mode..."
+            
+            # Force strict mode to False so custom modules pass validation
+            sed -i 's/"kmi_symbol_list_strict_mode": True,/"kmi_symbol_list_strict_mode": False,/g' BUILD.bazel
+            
+            # Inject fragment targeting into the Bazel build rules
+            sed -i '/name = "kernel_aarch64",/a \    post_defconfig_fragments = ["custom_fragment"],' BUILD.bazel
+        else
+            # ----------------------------------------------------
+            # UNSUPPORTED MODERN BAZEL FAIL-SAFE
+            # ----------------------------------------------------
+            echo "[-] Error: Unsupported Bazel architecture version: $BASE_VER. Cannot safely inject fragments."
+            exit 1
+        fi
+
+    # ========================================================================
+    # LEGACY MAKE ECOSYSTEM (Kernel 5.10 and older)
+    # ========================================================================
     else
         echo ">>> Legacy Make detected (5.10 or older): Copying fragment..."
         cp "$FRAGMENT_SRC" arch/arm64/configs/custom_legacy.fragment
     fi
-    
+
     cd ..
 else
     echo ">>> Skipping custom Kconfig configuration..."
