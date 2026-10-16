@@ -19,7 +19,7 @@ if [ "${USE_DYNAMIC_TRANSPLANT}" == "true" ]; then
     UPSTREAM_BRANCH="main"
 
     echo ">>> 2. Fetching Simonpunk's dynamic 10_enable_susfs_for_ksu patch..."
-    PATCH_URL="https://gitlab.com/simonpunk/susfs4ksu/-/raw/${SUSFS_BRANCH}/kernel_patches/KernelSU/10_enable_susfs_for_ksu.patch"
+    PATCH_URL="https://gitlab.com/simonpunk/susfs4ksu/-/raw/gki-android15-6.6-dev/kernel_patches/KernelSU/10_enable_susfs_for_ksu.patch"
 
     if wget -qO 10_enable_susfs_for_ksu.patch "$PATCH_URL"; then
         echo ">>> 3. Applying SuSFS patch dynamically..."

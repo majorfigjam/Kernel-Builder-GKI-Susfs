@@ -50,8 +50,12 @@ else
     echo ">>> Safe fallback channel detected. Bypassing dynamic squash merge..."
     echo ">>> [STABLE] Cloning custom pipeline branch: ${KSU_VARIANT_REF}..."
     
-    # Safest Git syntax: flags before the URL
-    git clone -b "${KSU_VARIANT_REF}" "${KSU_VARIANT_REPO_URL}" "${MANAGER_DIR}"
+      # Safest Git syntax: flags before the URL
+    if [ "${KSU_VARIANT_REF}" == "main" ]; then
+        git clone -b "dev" "${KSU_VARIANT_REPO_URL}" "${MANAGER_DIR}"
+    else
+        git clone -b "${KSU_VARIANT_REF}" "${KSU_VARIANT_REPO_URL}" "${MANAGER_DIR}"
+    fi
 
     # Prevent setup.sh from performing a redundant clone
     ln -sfn "../${MANAGER_DIR}" "common/${MANAGER_DIR}"

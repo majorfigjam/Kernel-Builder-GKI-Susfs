@@ -3,92 +3,54 @@
 
 echo ">>> Executing Integration Module for SukiSU-Ultra..."
 
-# Define the target commit hash here to bisect upstream cherry-pick breakages.
-# Leave empty ("") to always build the bleeding-edge main branch.
-SUKISU_COMMIT=""
+OFFICIAL_REPO_URL="https://github.com/SukiSU-Ultra/SukiSU-Ultra.git"
+CUSTOM_REPO_URL="${KSU_VARIANT_REPO_URL:-https://github.com/shoey63/SukiSU-Ultra.git}"
+CUSTOM_REF="${KSU_VARIANT_REF:-stable}"
+
+echo ">>> 1. Cloning custom branch (${CUSTOM_REF}) from ${CUSTOM_REPO_URL}..."
+git clone -b "${CUSTOM_REF}" "${CUSTOM_REPO_URL}" "${MANAGER_DIR}"
+
+ln -sfn "../${MANAGER_DIR}" "common/${MANAGER_DIR}"
+cd common
+# Run setup.sh BEFORE rebasing so it links common/drivers/kernelsu without clobbering git history
+bash "${MANAGER_DIR}/kernel/setup.sh" "${CUSTOM_REF}"
+cd ..
+
+cd "${MANAGER_DIR}"
+
+echo ">>> 2. Fetching latest official upstream (main + tags)..."
+git fetch --tags --force "${OFFICIAL_REPO_URL}" main
 
 if [ "${USE_DYNAMIC_TRANSPLANT}" == "true" ]; then
-    echo ">>> 1. Cloning pristine official SukiSU-Ultra upstream..."
-    git clone -b "${TARGET_BRANCH}" "https://github.com/${UPSTREAM_REPO}.git" "${MANAGER_DIR}"
-    
-    cd "${MANAGER_DIR}"
-    
-    # 1a. Optional: Pin to a specific older commit for debugging/bisecting
-    if [ -n "$SUKISU_COMMIT" ]; then
-        echo ">>> 1a. Pinning SukiSU-Ultra to older commit: $SUKISU_COMMIT..."
-        git reset --hard "$SUKISU_COMMIT"
+    echo ">>> 3. Dynamic mode active: Rebasing '${CUSTOM_REF}' onto bleeding-edge upstream/main..."
+    git config user.name "github-actions[bot]"
+    git config user.email "github-actions[bot]@users.noreply.github.com"
+
+    if git rebase FETCH_HEAD; then
+        echo "  -> On-the-fly rebase succeeded cleanly!"
+        UPSTREAM_BRANCH="main"
+    else
+        echo "  -> [WARNING] Rebase conflict detected with latest upstream!"
+        git rebase --abort
+        echo "  -> Aborted rebase and fell back to last known-good '${CUSTOM_REF}' state."
+        UPSTREAM_BRANCH="${CUSTOM_REF}"
     fi
-    
-    # Capture the pristine upstream hash for the Gatekeeper BEFORE we apply the SuSFS hooks
-    UPSTREAM_HASH=$(git log -n 1 --format="%H" -i --grep="ci skip" --grep="skip ci" --grep="clippy" --invert-grep -- manager/ kernel/ userspace/ .github/workflows/ ":!*Cargo.lock" ":!*Cargo.toml")
-    CALCULATED_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "v0.0.0")
-    CALCULATED_COUNT=$(git rev-list --count "${UPSTREAM_HASH}")
-    UPSTREAM_BRANCH="${TARGET_BRANCH}"
-
-    echo ">>> 2. Fetching curated SuSFS patch commit from your stable branch..."
-    git remote add shoey "https://github.com/shoey63/SukiSU-Ultra.git"
-    git fetch --quiet shoey stable
-
-    # Locate the exact hash of your Termux staging commit
-    PATCH_COMMIT=$(git log shoey/stable --grep="chore: apply surgical SuSFS port from builtin branch" --format="%H" -n 1)
-
-    if [ -z "$PATCH_COMMIT" ]; then
-        echo "[-] Error: Could not locate the 'chore: apply surgical SuSFS port' commit on your stable branch."
-        exit 1
-    fi
-
-    echo ">>> 3. Cherry-picking SuSFS hooks (Commit: $PATCH_COMMIT) onto bleeding-edge main..."
-    
-    # Configure temporary Git user for the cherry-pick merge
-    git config --global user.email "runner@github.actions"
-    git config --global user.name "GitHub Actions Canary"
-
-    # Attempt the cherry-pick. Catch conflicts and trigger the manual trapdoor if they arise.
-    if ! git cherry-pick "$PATCH_COMMIT"; then
-        echo "[-] CRITICAL: Cherry-pick failed due to upstream code divergence!"
-        echo "================ MERGE CONFLICTS ================"
-        git status --short
-        echo "-------------------------------------------------"
-        git diff
-        echo "================================================="
-        echo "[-] CI halted. Please run your Termux staging script locally to resolve conflicts and update your stable branch."
-        exit 1
-    fi
-    
-    echo ">>> SuSFS hooks successfully woven into main!"
-    cd ..
-
-    # Run setup.sh to link the newly patched kernel code into the GKI source tree
-    ln -sfn "../${MANAGER_DIR}" "common/${MANAGER_DIR}"
-    cd common
-    bash "${MANAGER_DIR}/kernel/setup.sh" "${TARGET_BRANCH}"
-    cd ..
 else
-    echo ">>> Safe fallback channel detected. Cloning custom pipeline branch..."
-    git clone -b "${KSU_VARIANT_REF}" "${KSU_VARIANT_REPO_URL}" "${MANAGER_DIR}"
-    
-    ln -sfn "../${MANAGER_DIR}" "common/${MANAGER_DIR}"
-    cd common
-    bash "${MANAGER_DIR}/kernel/setup.sh" "${KSU_VARIANT_REF}"
-    cd ..
-    
-    UPSTREAM_BRANCH="${KSU_VARIANT_REF}"
-    
-    cd "${MANAGER_DIR}"
-    
-    echo ">>> Locating official upstream sync point for ${UPSTREAM_REPO}..."
-    git fetch --quiet "https://github.com/${UPSTREAM_REPO}.git" "${TARGET_BRANCH}"
-    RAW_BASE=$(git merge-base HEAD FETCH_HEAD)
-    
-    set +o pipefail
-    UPSTREAM_HASH=$(git log -n 1 --first-parent "${RAW_BASE}" --format="%H" -i --grep="ci skip" --grep="skip ci" --grep="clippy" --invert-grep -- manager/ kernel/ userspace/ .github/workflows/ ":!*Cargo.lock" ":!*Cargo.toml")
-    set -o pipefail
-
-    CALCULATED_COUNT=$(git rev-list --count "${UPSTREAM_HASH}" 2>/dev/null || echo "11950")
-    CALCULATED_TAG=$(git describe --tags --abbrev=0 "${UPSTREAM_HASH}" 2>/dev/null || echo "v0.0.0")
-    
-    cd ..
+    echo ">>> 3. Safe fallback channel active: Using pinned '${CUSTOM_REF}' state without rebasing."
+    UPSTREAM_BRANCH="${CUSTOM_REF}"
 fi
+
+# 4. Calculate the official upstream sync point for version count and Manager APK matching
+RAW_BASE=$(git merge-base HEAD FETCH_HEAD)
+
+set +o pipefail
+UPSTREAM_HASH=$(git log -n 1 --first-parent "${RAW_BASE}" --format="%H" -i --grep="ci skip" --grep="skip ci" --invert-grep -- manager/ kernel/ userspace/ ":!*Cargo.lock" ":!*Cargo.toml")
+set -o pipefail
+
+CALCULATED_COUNT=$(git rev-list --count "${UPSTREAM_HASH}" 2>/dev/null || echo "11950")
+CALCULATED_TAG=$(git describe --tags --abbrev=0 "${UPSTREAM_HASH}" 2>/dev/null || echo "v0.0.0")
+
+cd ..
 
 # ---------------------------------------------------------
 # SukiSU-Ultra 6.12+ LSM Hook API Fix

@@ -9,8 +9,9 @@ on:
         type: choice
         options:
           - stable
-          - dynamic
-
+          - dynamic 
+          - main
+          
       build_name:
         description: "Build Name"
         required: true
@@ -34,7 +35,7 @@ on:
           - Stock
 
       enable_ksu_susfs:
-        description: "Integrate Root Manager and SUSFS?"
+        description: "Integrate Root Manager and SUSFS? (Select main channel for kernel root without susfs)"
         required: false
         type: boolean
         default: true      
@@ -218,6 +219,8 @@ jobs:
           if [ "${{ inputs.build_channel }}" == "dynamic" ]; then
             echo ">>> Routing ${{ inputs.root_manager }} to Automated Dynamic Transplant..."
             echo "USE_DYNAMIC_TRANSPLANT=true" >> $GITHUB_ENV
+            echo "KSU_VARIANT_REPO_URL=https://github.com/shoey63/${{ inputs.root_manager }}.git" >> $GITHUB_ENV
+            echo "KSU_VARIANT_REF=stable" >> $GITHUB_ENV
             echo "SUSFS_REPO_URL=https://gitlab.com/simonpunk/susfs4ksu.git" >> $GITHUB_ENV
           else
             echo ">>> Routing ${{ inputs.root_manager }} to Safe Fallback Fork (Stable branch)..."
@@ -297,7 +300,7 @@ jobs:
           bash ./scripts/inject_ksu_variant.sh "${{ inputs.root_manager }}"
 
       - name: Integrate SUSFS common-side
-        if: inputs.root_manager != 'Stock' && inputs.enable_ksu_susfs == true
+        if: inputs.root_manager != 'Stock' && inputs.enable_ksu_susfs == true && inputs.build_channel != 'main'
         env:
           SUSFS_NEXT_URL: ${{ env.SUSFS_REPO_URL }}
           SUSFS_NEXT_REF: ${{ env.SUSFS_BRANCH }}
@@ -305,7 +308,7 @@ jobs:
           bash ./scripts/integrate_susfs.sh
 
       - name: Fix SUSFS Patch Rejections
-        if: inputs.root_manager != 'Stock' && inputs.enable_ksu_susfs == true
+        if: inputs.root_manager != 'Stock' && inputs.enable_ksu_susfs == true && inputs.build_channel != 'main'
         run: |
           bash ./scripts/fix_susfs_rejections.sh
 

@@ -52,6 +52,19 @@ else
     cd ..
 fi
 
+# ---------------------------------------------------------
+# BakaSU SuSFS Strict Version Gatekeeper Hotfix
+# ---------------------------------------------------------
+# BakaSU intentionally crashes the Kbuild if it thinks SuSFS is outdated.
+# We strip the $(error ...) directive to force compilation of our custom port.
+SUSFS_COMPAT_MK="${MANAGER_DIR}/kernel/tools/susfs_compat.mk"
+if [ -f "$SUSFS_COMPAT_MK" ]; then
+    echo ">>> [HOTFIX] Neutering BakaSU strict SuSFS version gatekeeper..."
+    sed -i '/Please wait susfs update/d' "$SUSFS_COMPAT_MK"
+else
+    echo ">>> [NOTICE] BakaSU gatekeeper file not found at $SUSFS_COMPAT_MK"
+fi
+
 echo "  -> Target Tag: $CALCULATED_TAG"
 echo "  -> Target Hash: $UPSTREAM_HASH"
 echo "  -> Target Count: $CALCULATED_COUNT"
