@@ -5,6 +5,10 @@ set -euo pipefail
 echo ">>> Starting SUSFS patch fixup routine..."
 cd kernel_workspace
 
+ENABLE_UPSTREAM_FIXES="true" # <-- SWITCH: Change to "true" to re-enable hotfixes
+
+if [ "$ENABLE_UPSTREAM_FIXES" = "true" ]; then
+
 # 1. Kernel 5.10: Fix preinit.c API Mismatches (KernelSU & SuSFS)
 if [ "${BASE_VER:-}" = "5.10" ]; then
     echo ">>> Checking close_fd API compatibility in preinit.c..."
@@ -22,6 +26,11 @@ if [ "${BASE_VER:-}" = "5.10" ]; then
         fi
     fi
 fi
+
+else
+    echo ">>> [TESTING] Bypassing hotfixes (ENABLE_UPSTREAM_FIXES=false)."
+fi
+
 
 # 1.5. SukiSU-Ultra: Dynamic Amputation of Legacy SuSFS Hooks
 if [ "${ROOT_MANAGER:-}" = "SukiSU-Ultra" ]; then
